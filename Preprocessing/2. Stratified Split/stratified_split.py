@@ -1,8 +1,13 @@
+import time
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
+# Tracks execution time
+start_time = time.time()
 
-df = pd.read_csv('removedfeatures.csv')
+print("Splitting data into training and test sets...")
+
+df = pd.read_csv('removed_features.csv')
 
 class_column = 'Traffic'  
 
@@ -29,3 +34,7 @@ print(train_df[class_column].value_counts(normalize=True))
 
 print("\nClass distribution in testing set:")
 print(test_df[class_column].value_counts(normalize=True))
+
+
+end_time = time.time()
+print(f"\nTime it took to execute (in seconds): {end_time - start_time}")

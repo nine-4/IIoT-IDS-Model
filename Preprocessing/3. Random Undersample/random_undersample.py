@@ -1,5 +1,11 @@
+import time
 import pandas as pd
 from sklearn.utils import resample
+
+# Tracks execution time
+start_time = time.time()
+
+print("Performing undersampling...")
 
 # Read datasets
 train_data = pd.read_csv('training_data.csv')
@@ -35,3 +41,7 @@ print("Training Set Distribution:")
 print(balanced_train['Traffic'].value_counts(normalize=True))
 print("\nTest Set Distribution:")
 print(balanced_test['Traffic'].value_counts(normalize=True))
+
+
+end_time = time.time()
+print(f"\nTime it took to execute (in seconds): {end_time - start_time}")
