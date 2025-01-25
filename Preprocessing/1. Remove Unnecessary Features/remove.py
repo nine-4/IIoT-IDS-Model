@@ -5,7 +5,7 @@ columns_to_remove = ['StartTime', 'LastTime', 'SrcAddr', 'DstAddr', 'sIpId', 'dI
 
 # Read and process the file in chunks
 chunksize = 10_000  # Number of rows to process at a time
-output_file = 'removedfeatures.csv'  # Output CSV file
+output_file = 'modified_file.csv'  # Output CSV file
 
 for i, chunk in enumerate(pd.read_csv('wustl_iiot_2021.csv', chunksize=chunksize)):
     # Drop the specified columns
