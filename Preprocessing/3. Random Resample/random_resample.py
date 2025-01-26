@@ -76,8 +76,8 @@ train_balanced = pd.concat([
 test_updated = pd.concat([test_data, excess_normal])
 
 # Save updated datasets
-train_balanced.to_csv('training_data_balanced.csv', index=False)
-test_updated.to_csv('testing_data_updated.csv', index=False)
+train_balanced.to_csv('training_data_41.csv', index=False)
+test_updated.to_csv('testing_data_41.csv', index=False)
 
 # Check number of rows
 print(f"Training set: {train_balanced.shape[0]} rows")

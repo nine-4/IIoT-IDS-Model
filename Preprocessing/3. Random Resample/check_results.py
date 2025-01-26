@@ -9,8 +9,8 @@ print("Checking undersampling and oversampling results...")
 train = pd.read_csv("training_data.csv")
 test = pd.read_csv("testing_data.csv")
 
-train_balanced = pd.read_csv("training_data_balanced.csv")
-test_updated = pd.read_csv("testing_data_updated.csv")
+train_balanced = pd.read_csv("training_data_41.csv")
+test_updated = pd.read_csv("testing_data_41.csv")
 
 # Check number of rows
 print("Original Sets")
