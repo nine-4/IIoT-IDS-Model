@@ -37,4 +37,4 @@ print(test_df[class_column].value_counts(normalize=True))
 
 
 end_time = time.time()
-print(f"\nTime it took to execute (in seconds): {end_time - start_time}")
+print(f"\nTime it took to execute (in seconds): {end_time - start_time:.4f}")

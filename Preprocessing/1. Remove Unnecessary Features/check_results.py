@@ -11,4 +11,4 @@ print()
 print(f"After: {pd.read_csv('removed_features.csv', low_memory=False).columns.tolist()}")
 
 end_time = time.time()
-print(f"\nTime it took to execute (in seconds): {end_time - start_time}")
+print(f"\nTime it took to execute (in seconds): {end_time - start_time:.4f}")

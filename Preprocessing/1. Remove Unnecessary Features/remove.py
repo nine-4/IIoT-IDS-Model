@@ -21,4 +21,4 @@ for i, chunk in enumerate(pd.read_csv('wustl_iiot_2021.csv', chunksize=chunksize
     chunk.to_csv(output_file, mode='a', index=False, header=(i == 0))  # Write header only for the first chunk
 
 end_time = time.time()
-print(f"\nTime it took to execute (in seconds): {end_time - start_time}")
+print(f"\nTime it took to execute (in seconds): {end_time - start_time:.4f}")
