@@ -11,8 +11,8 @@ train_41 = pd.read_csv("training_data_41.csv")
 test_41 = pd.read_csv("testing_data_41.csv")
 
 # Alani's 11 features
-selected_features = ['DIntPkt', 'sTtl', 'Dport', 'IdleTime', 'SIntPkt',
-                     'DstBytes', 'pLoss', 'SrcLoad', 'SrcPkts', 'Load', 'DstLoad']
+selected_features = ['DIntPkt', 'sTtl', 'Dport', 'IdleTime', 'SIntPkt', 'DstBytes', 'pLoss',
+                     'SrcLoad', 'SrcPkts', 'Load', 'DstLoad', 'Traffic', 'Target']
 
 
 # Retain only the selected features
