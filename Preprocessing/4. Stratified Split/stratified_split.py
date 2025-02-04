@@ -7,7 +7,7 @@ start_time = time.time()
 
 print("Splitting data into training and test sets...")
 
-df = pd.read_csv('removed_features.csv')
+df = pd.read_csv('normalized.csv')
 
 class_column = 'Traffic'  
 
