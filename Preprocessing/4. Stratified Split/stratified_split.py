@@ -20,8 +20,8 @@ train_df, test_df = train_test_split(
 )
 
 # Save the training and testing sets to separate files
-train_df.to_csv('training_data.csv', index=False)
-test_df.to_csv('testing_data.csv', index=False)
+train_df.to_csv('training_data.csv', index=False, float_format="%.10f")
+test_df.to_csv('testing_data.csv', index=False, float_format="%.10f")
 
 print(f"Training set: {train_df.shape[0]} rows")
 print(f"Testing set: {test_df.shape[0]} rows")

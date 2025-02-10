@@ -6,7 +6,7 @@ start_time = time.time()
 
 print("Checking data split...")
 
-df = pd.read_csv('removed_features.csv')
+df = pd.read_csv('normalized.csv')
 train_df = pd.read_csv('training_data.csv')
 test_df = pd.read_csv('testing_data.csv')
 
