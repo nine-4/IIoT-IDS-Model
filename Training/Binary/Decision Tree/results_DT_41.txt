@@ -1,4 +1,5 @@
 
+---CROSS VALIDATION SCORES---
 ACCURACY:
 [0.99994618 0.99998804 0.99999402 0.99998804 1.        ]
 Average Accuracy: 0.9999832560706352
@@ -14,3 +15,27 @@ Average Recall: 0.9999832560706352
 F1 SCORE:
 [0.99994618 0.99998804 0.99999402 0.99998804 1.        ]
 Average F1 Score: 0.9999832560699495
+
+---CROSS VALIDATION PREDICTIONS---
+Confusion Matrix:
+[[418048     14]
+ [     0 418060]]
+
+Normalized Confusion Matrix:
+[[9.9997e-01 3.0000e-05]
+ [0.0000e+00 1.0000e+00]]
+
+Accuracy: 0.9999832560320144
+
+Precision (Class 1): 0.9999665131053355
+Precision (Class 0): 1.0
+
+Recall (Class 1): 1.0
+Recall (Class 0): 0.9999665121441317
+
+F1 Score (Class 1): 0.99998325627232
+F1 Score (Class 0): 0.999983255791702
+
+ROC-AUC Score: 0.9999832560720658
+
+Time it took to execute (in seconds): 225.2045

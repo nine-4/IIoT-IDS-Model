@@ -4,27 +4,32 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import KFold, cross_val_score, cross_val_predict
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score
+from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay,
+                             accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score)
 
+#-----VARIABLES TO MODIFY-----#
+feature_count = 11
+ml_algo = "Decision Tree"
+ml_algo_short = "DT"
+
+# For hyperparameter tuning: max_depth can be set to 'n' depths
+clf = DecisionTreeClassifier(random_state=42)
+k_folds = 5  # Number of folds
+#-----------------------------#
 
 # Tracks execution time
 start_time = time.time()
 
-print("Training Decision Tree using 11 Features...")
+print(f"Training {ml_algo} using {feature_count} Features...")
 
 # Load the dataset
-df = pd.read_csv("../../training_data_11.csv")
+df = pd.read_csv(f"../../training_data_{feature_count}.csv")
 
 # Split dataset into features (X) and target variable (y)
 X = df.drop(columns=["Traffic", "Target"])
 y = df["Target"]
 
-# Initialize the Decision Tree Classifier
-# For hyperparameter tuning: max_depth can be set to 'n' depths
-clf = DecisionTreeClassifier(random_state=42)
-
 # Set up k-fold cross-validation
-k_folds = 5  # Number of folds
 kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
 
 # Perform k-fold cross-validation and calculate metrics
@@ -62,6 +67,16 @@ print(conf_matrix)
 print("\nNormalized Confusion Matrix:")
 print(normalized_conf_matrix)
 
+conf_matrix_display = ConfusionMatrixDisplay(confusion_matrix = conf_matrix, display_labels = [0, 1])
+conf_matrix_display.plot(cmap=plt.cm.Blues)
+plt.savefig(f"conf_matrix_{feature_count}.png", dpi=300, bbox_inches='tight')
+plt.close()
+
+normalized_conf_matrix_display = ConfusionMatrixDisplay(confusion_matrix = normalized_conf_matrix, display_labels = [0, 1])
+normalized_conf_matrix_display.plot(cmap=plt.cm.Greens)
+plt.savefig(f"conf_matrix_normalized_{feature_count}.png", dpi=300, bbox_inches='tight')
+plt.close()
+
 accuracy_pred = accuracy_score(y, y_pred)
 precision_pred_1 = precision_score(y, y_pred, pos_label=1)
 precision_pred_0 = precision_score(y, y_pred, pos_label=0)
@@ -86,9 +101,8 @@ plt.ylabel('True Positive Rate')
 plt.title('ROC-AUC Curve')
 plt.legend(loc='lower right')
 plt.grid()
-# Save the plot as an image file (PNG)
-plt.savefig("roc_auc_curve.png", dpi=300, bbox_inches='tight')
-plt.show()
+plt.savefig(f"roc_auc_curve_{feature_count}.png", dpi=300, bbox_inches='tight')
+plt.close()
 
 
 print(f"\nAccuracy: {accuracy_pred}")
@@ -103,7 +117,7 @@ print(f"\nF1 Score (Class 1): {f1_pred_1}")
 print(f"F1 Score (Class 0): {f1_pred_0}")
 
 # Output in a txt file
-with open('results_DT_11.txt', 'w') as file:
+with open(f'results_{ml_algo_short}_{feature_count}.txt', 'w') as file:
     file.write(f"\n---CROSS VALIDATION SCORES---")
     file.write(f"\nACCURACY:\n{accuracy_scores}")
     file.write(f"\nAverage Accuracy: {accuracy_scores.mean()}\n")
@@ -136,6 +150,8 @@ with open('results_DT_11.txt', 'w') as file:
     file.write(f"F1 Score (Class 0): {f1_pred_0}\n")
 
     file.write(f"\nROC-AUC Score: {roc_auc}\n")
+
+    file.write(f"\nTime it took to execute (in seconds): {time.time() - start_time:.4f}")
 
 
 end_time = time.time()

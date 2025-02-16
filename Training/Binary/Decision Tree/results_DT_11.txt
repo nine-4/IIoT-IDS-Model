@@ -37,3 +37,5 @@ F1 Score (Class 1): 0.9999772762880458
 F1 Score (Class 0): 0.9999772757988453
 
 ROC-AUC Score: 0.9999772755599692
+
+Time it took to execute (in seconds): 58.8023
