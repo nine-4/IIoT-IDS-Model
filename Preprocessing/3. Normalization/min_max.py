@@ -15,7 +15,8 @@ columns_to_normalize = ["SrcPkts", "DstPkts", "TotPkts", "DstBytes", "SrcBytes",
                         "SrcLoad", "DstLoad", "Load", "SrcRate", "DstRate", "Rate", "SrcLoss",
                         "DstLoss", "Loss", "pLoss", "SrcJitter", "DstJitter", "SIntPkt", "DIntPkt",
                         "Dur", "TcpRtt", "IdleTime", "Sum", "Min", "Max", "sDSb", "SAppBytes", "DAppBytes",
-                        "TotAppByte", "SynAck", "RunTime", "SrcJitAct", "DstJitAct"]
+                        "TotAppByte", "SynAck", "RunTime", "SrcJitAct", "DstJitAct",
+                        "Mean", "sTtl", "dTtl", "sTos"]
 # Features not included: sTtl, dTtl, sTos
 
 # Initialize the MinMaxScaler (scales values to range 0-1)
