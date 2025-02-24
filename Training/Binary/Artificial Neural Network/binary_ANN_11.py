@@ -79,7 +79,7 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     plt.savefig(f"./results_{feature_count}/conf_matrix_{feature_count}_fold_{fold+1}.png", dpi=300, bbox_inches='tight')
     plt.close()
 
-    norm_conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=[0, 1])
+    norm_conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=norm_conf_matrix, display_labels=[0, 1])
     norm_conf_matrix_disp.plot(cmap=plt.cm.Greens)
     plt.title(f"Normalized Confusion Matrix - Fold {fold + 1}")
     plt.savefig(f"./{results_path}/conf_matrix_norm_{feature_count}_fold_{fold + 1}.png", dpi=300, bbox_inches='tight')
@@ -104,17 +104,38 @@ print(f"Average: {np.mean(f1_scores_class_1)}")
 print(f"F1 Score (Class 0): \n{f1_scores_class_0}")
 print(f"Average: {np.mean(f1_scores_class_0)}")
 
+# Aggregate confusion matrices
+agg_conf_matrix = np.sum(conf_matrices, axis=0)
+agg_norm_conf_matrix = np.round(agg_conf_matrix / np.sum(agg_conf_matrix, axis=1, keepdims=True), decimals=5)
 
 print(f"\n---CONFUSION MATRICES---")
 for i, cm in enumerate(conf_matrices):
-    print(f"\nFold {i+1}:")
-    print(np.array2string(cm, separator=', '))
+    print(f"Fold {i+1}:")
+    print(np.array2string(cm, separator=', ') + "\n")
+
+print("---AGGREGATED CONFUSION MATRIX---")
+print(np.array2string(agg_conf_matrix, separator=', '))
 
 print("\n---NORMALIZED CONFUSION MATRICES---")
 for i, cm in enumerate(norm_conf_matrices):
-    print(f"\nFold {i+1}:")
-    print(np.array2string(cm, separator=', '))
+    print(f"Fold {i+1}:")
+    print(np.array2string(cm, separator=', ') + "\n")
 
+print("---AGGREGATED NORMALIZED CONFUSION MATRIX---")
+print(np.array2string(agg_norm_conf_matrix, separator=', '))
+
+# Display aggregated confusion matrix
+agg_conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=agg_conf_matrix, display_labels=[0, 1])
+agg_conf_matrix_disp.plot(cmap=plt.cm.Blues)
+plt.title("Aggregated Confusion Matrix")
+plt.savefig(f"./{results_path}/aggregated_conf_matrix_{feature_count}.png", dpi=300, bbox_inches='tight')
+plt.close()
+
+agg_norm_conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=agg_norm_conf_matrix, display_labels=[0, 1])
+agg_norm_conf_matrix_disp.plot(cmap=plt.cm.Greens)
+plt.title("Aggregated Normalized Confusion Matrix")
+plt.savefig(f"./{results_path}/aggregated_conf_matrix_norm_{feature_count}.png", dpi=300, bbox_inches='tight')
+plt.close()
 
 # Get predicted values using cross-validation
 y_proba_class_1 = cross_val_predict(clf, X, y, cv=kf, method="predict_proba")[:, 1]  # Probabilities for class 1
@@ -181,10 +202,16 @@ with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') 
         file.write(f"\nFold {i+1}:\n")
         file.write(np.array2string(cm, separator=', ') + "\n")
 
-    file.write("\n---NORMALIZED CONFUSION MATRICES---\n")
+    file.write("\n---AGGREGATED CONFUSION MATRIX---\n")
+    file.write(f"{agg_conf_matrix}\n")
+
+    file.write("\n---NORMALIZED CONFUSION MATRICES---")
     for i, cm in enumerate(norm_conf_matrices):
         file.write(f"\nFold {i+1}:\n")
         file.write(np.array2string(cm, separator=', ') + "\n")
+
+    file.write("\n---AGGREGATED NORMALIZED CONFUSION MATRIX---\n")
+    file.write(f"{agg_norm_conf_matrix}\n")
 
     file.write(f"\n---ROC-AUC SCORES---")
     file.write(f"\nROC-AUC Score (Class 1): {roc_auc_class_1}")

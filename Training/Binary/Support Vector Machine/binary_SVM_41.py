@@ -4,17 +4,17 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import KFold, cross_val_predict
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC  # Import the Support Vector Classifier
 from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay,
                              accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score)
 
 #-----VARIABLES TO MODIFY-----#
-feature_count = 11
-ml_algo = "Decision Tree"
-ml_algo_short = "DT"
+feature_count = 41
+ml_algo = "Support Vector Machine"
+ml_algo_short = "SVM"
 
-# For hyperparameter tuning: max_depth can be set to 'n' depths
-clf = DecisionTreeClassifier(random_state=42)
+# For hyperparameter tuning: you can tune C, kernel, gamma, etc.
+clf = SVC(kernel='linear', random_state=42)  # Example with linear kernel
 k_folds = 10  # Number of folds
 
 results_path = f"results_{feature_count}"
@@ -222,4 +222,3 @@ with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') 
 
 end_time = time.time()
 print(f"\nTime it took to execute (in seconds): {end_time - start_time:.4f}")
-
