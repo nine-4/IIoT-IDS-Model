@@ -112,4 +112,4 @@ Fold 10:
 ROC-AUC Score (Class 1): 0.9899622015716745
 ROC-AUC Score (Class 0): 0.007818843928990283
 
-Time it took to execute (in seconds): 25.2993
+Time it took to execute (in seconds): 53.0819
