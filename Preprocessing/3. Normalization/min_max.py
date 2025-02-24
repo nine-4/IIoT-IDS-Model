@@ -17,7 +17,7 @@ columns_to_normalize = ["SrcPkts", "DstPkts", "TotPkts", "DstBytes", "SrcBytes",
                         "Dur", "TcpRtt", "IdleTime", "Sum", "Min", "Max", "sDSb", "SAppBytes", "DAppBytes",
                         "TotAppByte", "SynAck", "RunTime", "SrcJitAct", "DstJitAct",
                         "Mean", "sTtl", "dTtl", "sTos"]
-# Features not included: sTtl, dTtl, sTos
+# Features not included: N/A
 
 # Initialize the MinMaxScaler (scales values to range 0-1)
 scaler = MinMaxScaler(feature_range=(0,1))
