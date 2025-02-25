@@ -3,23 +3,20 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import KFold, cross_val_predict
+from sklearn.model_selection import KFold, cross_val_predict, GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay,
                              accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score)
 
-#-----VARIABLES TO MODIFY-----#
+# -----VARIABLES TO MODIFY-----#
 feature_count = 11
 ml_algo = "K-Nearest Neighbors"
 ml_algo_short = "KNN"
-
-# Define the KNN model
-clf = KNeighborsClassifier(n_neighbors=5)
 k_folds = 10  # Number of folds
 
 results_path = f"results_{feature_count}"
 os.makedirs(results_path, exist_ok=True)
-#-----------------------------#
+# -----------------------------#
 
 # Tracks execution time
 start_time = time.time()
@@ -35,6 +32,24 @@ y = df["Target"]
 
 # Set up k-fold cross-validation
 kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+
+# Define hyperparameter grid
+param_grid = {
+    "n_neighbors": [3, 5, 7, 9, 11],
+    "weights": ["uniform", "distance"],
+    "metric": ["euclidean", "manhattan", "minkowski"]
+}
+
+# Hyperparameter tuning using GridSearchCV
+grid_search = GridSearchCV(KNeighborsClassifier(), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
+grid_search.fit(X, y)
+
+# Best hyperparameters
+best_params = grid_search.best_params_
+print(f"Best Parameters for {ml_algo_short}: {best_params}")
+
+# Use the best parameter/s found by GridSearchCV
+clf = KNeighborsClassifier(**best_params)
 
 # Lists to store confusion matrices and scores
 conf_matrices, norm_conf_matrices = [], []
