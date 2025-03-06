@@ -8,7 +8,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay,
                              accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score)
 
-# -----VARIABLES TO MODIFY-----#
+# -----VARIABLES TO MODIFY----- #
 feature_count = 11
 ml_algo = "K-Nearest Neighbors"
 ml_algo_short = "KNN"
@@ -16,7 +16,7 @@ k_folds = 10  # Number of folds
 
 results_path = f"results_{feature_count}"
 os.makedirs(results_path, exist_ok=True)
-# -----------------------------#
+# ----------------------------- #
 
 # Tracks execution time
 start_time = time.time()
@@ -32,6 +32,8 @@ y = df["Target"]
 
 # Set up k-fold cross-validation
 kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+
+print(f"Performing Hyperparameter Tuning for {ml_algo_short}...")
 
 # Define hyperparameter grid
 param_grid = {
@@ -50,6 +52,7 @@ print(f"Best Parameters for {ml_algo_short}: {best_params}")
 
 # Use the best parameter/s found by GridSearchCV
 clf = KNeighborsClassifier(**best_params)
+# ----------------------------- #
 
 # Lists to store confusion matrices and scores
 conf_matrices, norm_conf_matrices = [], []
@@ -193,6 +196,8 @@ plt.close()
 
 # Output in a txt file
 with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') as file:
+    file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
+
     file.write(f"\n---SCORES---")
     file.write(f"\nAccuracy: \n{accuracy_scores}")
     file.write(f"\nAverage: {np.mean(accuracy_scores)}\n")

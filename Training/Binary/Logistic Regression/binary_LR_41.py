@@ -3,22 +3,20 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import KFold, cross_val_predict
+from sklearn.model_selection import KFold, cross_val_predict, GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay,
                              accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score)
 
-#-----VARIABLES TO MODIFY-----#
+# -----VARIABLES TO MODIFY----- #
 feature_count = 41
 ml_algo = "Logistic Regression"
 ml_algo_short = "LR"
-
-clf = LogisticRegression(random_state=42, max_iter=2000)
 k_folds = 10  # Number of folds
 
 results_path = f"results_{feature_count}"
 os.makedirs(results_path, exist_ok=True)
-#-----------------------------#
+# ----------------------------- #
 
 # Tracks execution time
 start_time = time.time()
@@ -34,6 +32,28 @@ y = df["Target"]
 
 # Set up k-fold cross-validation
 kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+
+print(f"Performing Hyperparameter Tuning for {ml_algo_short}...")
+
+# Define the hyperparameter grid for tuning
+param_grid = {
+    'C': [0.001, 0.01, 0.1, 1, 10, 100],  # Regularization strength
+    'penalty': ['l1', 'l2'],  # Regularization type
+    'solver': ['liblinear', 'saga'],  # Solvers that support L1 and L2 penalties
+    'max_iter': [100, 500, 1000]  # Number of iterations
+}
+
+# Hyperparameter tuning using GridSearchCV
+grid_search = GridSearchCV(LogisticRegression(), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
+grid_search.fit(X, y)
+
+# Best hyperparameters
+best_params = grid_search.best_params_
+print(f"Best Parameters for {ml_algo_short}: {best_params}")
+
+# Use the best parameter/s found by GridSearchCV
+clf = LogisticRegression(**best_params, random_state=42)
+# ----------------------------- #
 
 # Lists to store confusion matrices and scores
 conf_matrices, norm_conf_matrices = [], []
@@ -177,6 +197,8 @@ plt.close()
 
 # Output in a txt file
 with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') as file:
+    file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
+
     file.write(f"\n---SCORES---")
     file.write(f"\nAccuracy: \n{accuracy_scores}")
     file.write(f"\nAverage: {np.mean(accuracy_scores)}\n")
