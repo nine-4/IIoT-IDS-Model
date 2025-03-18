@@ -96,28 +96,155 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     f1_scores_class_1.append(f1_score(y_val, y_pred, pos_label=1))
     f1_scores_class_0.append(f1_score(y_val, y_pred, pos_label=0))
 
-# Display aggregated confusion matrix
+    # Display confusion matrix and normalized version
+    conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=[0, 1])
+    conf_matrix_disp.plot(cmap=plt.cm.Blues)
+    plt.title(f"Confusion Matrix - Fold {fold + 1}")
+    plt.savefig(f"./results_{feature_count}/conf_matrix_{feature_count}_fold_{fold+1}.png", dpi=300, bbox_inches='tight')
+    plt.close()
+
+    norm_conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=norm_conf_matrix, display_labels=[0, 1])
+    norm_conf_matrix_disp.plot(cmap=plt.cm.Greens)
+    plt.title(f"Normalized Confusion Matrix - Fold {fold + 1}")
+    plt.savefig(f"./{results_path}/conf_matrix_norm_{feature_count}_fold_{fold + 1}.png", dpi=300, bbox_inches='tight')
+    plt.close()
+
+print(f"\n---SCORES---")
+print(f"Accuracy: \n{accuracy_scores}")
+print(f"Average: {np.mean(accuracy_scores)}")
+
+print(f"\nPrecision (Class 1): \n{precision_scores_class_1}")
+print(f"Average: {np.mean(precision_scores_class_1)}")
+print(f"Precision (Class 0): \n{precision_scores_class_0}")
+print(f"Average: {np.mean(precision_scores_class_0)}")
+
+print(f"\nRecall (Class 1): \n{recall_scores_class_1}")
+print(f"Average: {np.mean(recall_scores_class_1)}")
+print(f"Recall (Class 0): \n{recall_scores_class_0}")
+print(f"Average: {np.mean(recall_scores_class_0)}")
+
+print(f"\nF1 Score (Class 1): \n{f1_scores_class_1}")
+print(f"Average: {np.mean(f1_scores_class_1)}")
+print(f"F1 Score (Class 0): \n{f1_scores_class_0}")
+print(f"Average: {np.mean(f1_scores_class_0)}")
+
+# Aggregate confusion matrices
 agg_conf_matrix = np.sum(conf_matrices, axis=0)
 agg_norm_conf_matrix = np.round(agg_conf_matrix / np.sum(agg_conf_matrix, axis=1, keepdims=True), decimals=5)
 
-# ROC-AUC
-y_proba = cross_val_predict(clf, X, y, cv=kf, method="predict_proba")
-roc_auc_class_1 = roc_auc_score(y, y_proba[:, 1])
-roc_auc_class_0 = roc_auc_score(y, y_proba[:, 0])
+print(f"\n---CONFUSION MATRICES---")
+for i, cm in enumerate(conf_matrices):
+    print(f"Fold {i+1}:")
+    print(np.array2string(cm, separator=', ') + "\n")
 
-# Output in a text file
+print("---AGGREGATED CONFUSION MATRIX---")
+print(np.array2string(agg_conf_matrix, separator=', '))
+
+print("\n---NORMALIZED CONFUSION MATRICES---")
+for i, cm in enumerate(norm_conf_matrices):
+    print(f"Fold {i+1}:")
+    print(np.array2string(cm, separator=', ') + "\n")
+
+print("---AGGREGATED NORMALIZED CONFUSION MATRIX---")
+print(np.array2string(agg_norm_conf_matrix, separator=', '))
+
+# Display aggregated confusion matrix
+agg_conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=agg_conf_matrix, display_labels=[0, 1])
+agg_conf_matrix_disp.plot(cmap=plt.cm.Blues)
+plt.title("Aggregated Confusion Matrix")
+plt.savefig(f"./{results_path}/aggregated_conf_matrix_{feature_count}.png", dpi=300, bbox_inches='tight')
+plt.close()
+
+agg_norm_conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=agg_norm_conf_matrix, display_labels=[0, 1])
+agg_norm_conf_matrix_disp.plot(cmap=plt.cm.Greens)
+plt.title("Aggregated Normalized Confusion Matrix")
+plt.savefig(f"./{results_path}/aggregated_conf_matrix_norm_{feature_count}.png", dpi=300, bbox_inches='tight')
+plt.close()
+
+# Get predicted values using cross-validation
+y_proba_class_1 = cross_val_predict(clf, X, y, cv=kf, method="predict_proba")[:, 1]  # Probabilities for class 1
+y_proba_class_0 = cross_val_predict(clf, X, y, cv=kf, method="predict_proba")[:, 0]  # Probabilities for class 0
+
+# Compute ROC-AUC score
+roc_auc_class_1 = roc_auc_score(y, y_proba_class_1)
+fpr_class_1, tpr_class_1, _ = roc_curve(y, y_proba_class_1)
+roc_auc_class_0 = roc_auc_score(y, y_proba_class_0)
+fpr_class_0, tpr_class_0, _ = roc_curve(y, y_proba_class_0)
+
+# Print ROC-AUC score
+print(f"\n---ROC-AUC SCORES---")
+print(f"ROC-AUC Score (Class 1): {roc_auc_class_1}")
+print(f"ROC-AUC Score (Class 0): {roc_auc_class_0}")
+
+# Plot ROC Curve
+plt.figure(figsize=(8, 6))
+plt.plot(fpr_class_1, tpr_class_1, color='blue', lw=2, label=f'ROC Curve (AUC = {roc_auc_class_1})')
+plt.plot([0, 1], [0, 1], color='gray', linestyle='--')  # Diagonal reference line
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC-AUC Curve (Class 1)')
+plt.legend(loc='lower right')
+plt.grid()
+plt.savefig(f"./{results_path}/roc_auc_curve_{feature_count}_class_1.png", dpi=300, bbox_inches='tight')
+plt.close()
+
+plt.figure(figsize=(8, 6))
+plt.plot(fpr_class_0, tpr_class_0, color='blue', lw=2, label=f'ROC Curve (AUC = {roc_auc_class_0})')
+plt.plot([0, 1], [0, 1], color='gray', linestyle='--')  # Diagonal reference line
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC-AUC Curve (Class 0)')
+plt.legend(loc='lower right')
+plt.grid()
+plt.savefig(f"./{results_path}/roc_auc_curve_{feature_count}_class_0.png", dpi=300, bbox_inches='tight')
+plt.close()
+
+
+# Output in a txt file
 with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') as file:
-    file.write(f"Best Parameters: {best_params}\n")
-    file.write(f"Accuracy: {np.mean(accuracy_scores)}\n")
-    file.write(f"Precision (Class 1): {np.mean(precision_scores_class_1)}\n")
-    file.write(f"Precision (Class 0): {np.mean(precision_scores_class_0)}\n")
-    file.write(f"Recall (Class 1): {np.mean(recall_scores_class_1)}\n")
-    file.write(f"Recall (Class 0): {np.mean(recall_scores_class_0)}\n")
-    file.write(f"F1 Score (Class 1): {np.mean(f1_scores_class_1)}\n")
-    file.write(f"F1 Score (Class 0): {np.mean(f1_scores_class_0)}\n")
-    file.write(f"ROC-AUC Score (Class 1): {roc_auc_class_1}\n")
-    file.write(f"ROC-AUC Score (Class 0): {roc_auc_class_0}\n")
+    file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
 
-# Execution time
+    file.write(f"\n---SCORES---")
+    file.write(f"\nAccuracy: \n{accuracy_scores}")
+    file.write(f"\nAverage: {np.mean(accuracy_scores)}\n")
+
+    file.write(f"\nPrecision (Class 1): \n{precision_scores_class_1}")
+    file.write(f"\nAverage: {np.mean(precision_scores_class_1)}\n")
+    file.write(f"Precision (Class 0): \n{precision_scores_class_0}")
+    file.write(f"\nAverage: {np.mean(precision_scores_class_0)}\n")
+
+    file.write(f"\nRecall (Class 1): \n{recall_scores_class_1}")
+    file.write(f"\nAverage: {np.mean(recall_scores_class_1)}\n")
+    file.write(f"Recall (Class 0): \n{recall_scores_class_0}")
+    file.write(f"\nAverage: {np.mean(recall_scores_class_0)}\n")
+
+    file.write(f"\nF1 Score (Class 1): \n{f1_scores_class_1}")
+    file.write(f"\nAverage: {np.mean(f1_scores_class_1)}\n")
+    file.write(f"F1 Score (Class 0): \n{f1_scores_class_0}")
+    file.write(f"\nAverage: {np.mean(f1_scores_class_0)}\n")
+
+    file.write(f"\n---CONFUSION MATRICES---")
+    for i, cm in enumerate(conf_matrices):
+        file.write(f"\nFold {i+1}:\n")
+        file.write(np.array2string(cm, separator=', ') + "\n")
+
+    file.write("\n---AGGREGATED CONFUSION MATRIX---\n")
+    file.write(f"{agg_conf_matrix}\n")
+
+    file.write("\n---NORMALIZED CONFUSION MATRICES---")
+    for i, cm in enumerate(norm_conf_matrices):
+        file.write(f"\nFold {i+1}:\n")
+        file.write(np.array2string(cm, separator=', ') + "\n")
+
+    file.write("\n---AGGREGATED NORMALIZED CONFUSION MATRIX---\n")
+    file.write(f"{agg_norm_conf_matrix}\n")
+
+    file.write(f"\n---ROC-AUC SCORES---")
+    file.write(f"\nROC-AUC Score (Class 1): {roc_auc_class_1}")
+    file.write(f"\nROC-AUC Score (Class 0): {roc_auc_class_0}\n")
+
+    file.write(f"\nTime it took to execute (in seconds): {time.time() - start_time:.4f}")
+
+
 end_time = time.time()
 print(f"\nTime it took to execute (in seconds): {end_time - start_time:.4f}")

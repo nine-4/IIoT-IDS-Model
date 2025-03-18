@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import KFold, cross_val_score, cross_val_predict
+from sklearn.model_selection import KFold, cross_val_predict, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay,
                              accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score)
@@ -12,8 +12,6 @@ from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay,
 feature_count = 41
 ml_algo = "Random Forest"
 ml_algo_short = "RF"
-
-clf = RandomForestClassifier(random_state=42)
 k_folds = 10  # Number of folds
 
 results_path = f"results_{feature_count}"
@@ -34,6 +32,33 @@ y = df["Target"]
 
 # Set up k-fold cross-validation
 kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+
+# Define hyperparameter grid
+param_grid = {
+    "n_estimators": [50, 100, 150],
+    "max_depth": [10, 20, 30, None],
+    "min_samples_split": [2, 5, 10],
+    "min_samples_leaf": [1, 2, 4],
+    "bootstrap": [True, False]
+}
+
+# Hyperparameter tuning using GridSearchCV
+print(f"\nPerforming Hyperparameter Tuning for {ml_algo_short}...")
+grid_search = GridSearchCV(RandomForestClassifier(random_state=42),
+                           param_grid,
+                           cv=kf,
+                           scoring="accuracy",
+                           n_jobs=-1)
+grid_search.fit(X, y)
+
+# Best hyperparameters
+best_params = grid_search.best_params_
+print(f"Best Parameters for {ml_algo_short}: {best_params}")
+
+# Use the best parameters from Grid Search
+clf = RandomForestClassifier(**best_params, random_state=42)
+
+#-----------------------------#
 
 # Lists to store confusion matrices and scores
 conf_matrices, norm_conf_matrices = [], []
@@ -177,6 +202,8 @@ plt.close()
 
 # Output in a txt file
 with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') as file:
+    file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
+
     file.write(f"\n---SCORES---")
     file.write(f"\nAccuracy: \n{accuracy_scores}")
     file.write(f"\nAverage: {np.mean(accuracy_scores)}\n")
@@ -221,4 +248,3 @@ with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') 
 
 end_time = time.time()
 print(f"\nTime it took to execute (in seconds): {end_time - start_time:.4f}")
-
