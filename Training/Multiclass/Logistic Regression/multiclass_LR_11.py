@@ -50,15 +50,16 @@ param_grid = {
 }
 
 # Hyperparameter tuning using GridSearchCV
-grid_search = GridSearchCV(LogisticRegression(), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
-grid_search.fit(X, y)
+#grid_search = GridSearchCV(LogisticRegression(), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
+#grid_search.fit(X, y)
 
 # Best hyperparameters
-best_params = grid_search.best_params_
-print(f"Best Parameters for {ml_algo_short}: {best_params}")
+#best_params = grid_search.best_params_
+#print(f"Best Parameters for {ml_algo_short}: {best_params}")
 
 # Use the best parameter/s found by GridSearchCV
-clf = LogisticRegression(**best_params, random_state=42)
+#clf = LogisticRegression(**best_params, random_state=42)
+clf = LogisticRegression(random_state=42)
 # ----------------------------- #
 
 # Lists to store confusion matrices and scores
