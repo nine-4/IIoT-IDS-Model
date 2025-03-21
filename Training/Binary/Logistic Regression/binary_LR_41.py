@@ -37,10 +37,10 @@ print(f"Performing Hyperparameter Tuning for {ml_algo_short}...")
 
 # Define the hyperparameter grid for tuning
 param_grid = {
-    'C': [0.001, 0.01, 0.1, 1, 10, 100],  # Regularization strength
-    'penalty': ['l1', 'l2'],  # Regularization type
-    'solver': ['liblinear', 'saga'],  # Solvers that support L1 and L2 penalties
-    'max_iter': [100, 500, 1000]  # Number of iterations
+    'C': [0.01, 0.1, 1, 10],  # Regularization strength
+    'penalty': [None, 'l2'],  # Regularization type
+    'solver': ['lbfgs', 'newton-cg'],  # Solvers that support L1 and L2 penalties
+    'max_iter': [1000]  # Number of iterations
 }
 
 # Hyperparameter tuning using GridSearchCV
