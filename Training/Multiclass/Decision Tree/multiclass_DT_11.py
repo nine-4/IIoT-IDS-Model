@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import KFold, cross_val_predict, GridSearchCV
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import plot_tree
 from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay,
                              accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score)
 from sklearn.preprocessing import label_binarize
@@ -226,6 +227,12 @@ with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') 
 
     file.write(f"\nTime it took to execute (in seconds): {time.time() - start_time:.4f}")
 
+# Plot the trained Decision Tree
+plt.figure(figsize=(20, 10))
+plot_tree(clf, feature_names=X.columns, class_names=[str(cls) for cls in attack_labels], filled=True, rounded=True)
+plt.title("Decision Tree Visualization")
+plt.savefig(f"./{results_path}/decision_tree_{feature_count}.png", dpi=300, bbox_inches='tight')
+plt.close()
 
 end_time = time.time()
 print(f"\nTime it took to execute (in seconds): {end_time - start_time:.4f}")
