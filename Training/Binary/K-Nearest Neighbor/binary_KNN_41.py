@@ -39,7 +39,7 @@ print(f"Performing Hyperparameter Tuning for {ml_algo_short}...")
 param_grid = {
     "n_neighbors": [3, 5, 7, 9, 11],
     "weights": ["uniform", "distance"],
-    "metric": ["euclidean", "manhattan", "minkowski"]
+    "metric": ["euclidean", "manhattan"]
 }
 
 # Hyperparameter tuning using GridSearchCV

@@ -50,7 +50,6 @@ param_grid = {
 }
 
 # Hyperparameter tuning using GridSearchCV
-print(f"\nPerforming Hyperparameter Tuning for {ml_algo_short}...")
 grid_search = GridSearchCV(RandomForestClassifier(random_state=42),
                            param_grid,
                            cv=kf,
