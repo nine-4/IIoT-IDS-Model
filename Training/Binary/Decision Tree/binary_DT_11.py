@@ -26,6 +26,10 @@ print(f"Training {ml_algo} using {feature_count} Features...")
 # Load the dataset
 df = pd.read_csv(f"../../training_data_{feature_count}.csv")
 
+print(f"Total rows: {len(df)}")
+print(f"Unique rows: {len(df.drop_duplicates())}")
+print(f"Number of duplicate rows: {len(df) - len(df.drop_duplicates())}")
+
 # Split dataset into features (X) and target variable (y)
 X = df.drop(columns=["Traffic", "Target"])
 y = df["Target"]
@@ -68,6 +72,22 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     # Split data
     X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
     y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+
+    # Combine features and target to detect duplicates
+    train_combined = pd.concat([X_train, y_train], axis=1)
+    val_combined = pd.concat([X_val, y_val], axis=1)
+
+    # Remove any rows from val_combined that also appear in train_combined
+    initial_val_size = len(val_combined)
+    val_combined = val_combined[~val_combined.apply(tuple, axis=1).isin(train_combined.apply(tuple, axis=1))]
+    removed_count = initial_val_size - len(val_combined)
+
+    # Separate X_val and y_val again
+    X_val = val_combined.drop(columns=["Target"])
+    y_val = val_combined["Target"]
+
+    print(f"Fold {fold + 1}: Removed {removed_count} duplicate samples from validation set.")
+    print(f"Fold {fold + 1}: Validation set size after deduplication: {len(X_val)}")
 
     # Train the model
     clf.fit(X_train, y_train)

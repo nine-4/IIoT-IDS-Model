@@ -64,6 +64,33 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
     y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
 
+    train_class_counts = y_train.value_counts()
+    num_train_class_0 = train_class_counts.get(0, 0)
+    num_train_class_1 = train_class_counts.get(1, 0)
+
+    print(f"Fold {fold + 1}: Training set class distribution -> Class 0: {num_train_class_0}, Class 1: {num_train_class_1}")
+
+    # Combine features and target to detect duplicates
+    train_combined = pd.concat([X_train, y_train], axis=1)
+    val_combined = pd.concat([X_val, y_val], axis=1)
+
+    # Remove any rows from val_combined that also appear in train_combined
+    initial_val_size = len(val_combined)
+    val_combined = val_combined[~val_combined.apply(tuple, axis=1).isin(train_combined.apply(tuple, axis=1))]
+    removed_count = initial_val_size - len(val_combined)
+
+    # Separate X_val and y_val again
+    X_val = val_combined.drop(columns=["Target"])
+    y_val = val_combined["Target"]
+
+    class_counts = y_val.value_counts()
+    num_class_0 = class_counts.get(0, 0)
+    num_class_1 = class_counts.get(1, 0)
+
+    print(f"Fold {fold + 1}: Removed {removed_count} duplicate samples from validation set.")
+    print(f"Fold {fold + 1}: Validation set size after deduplication: {len(X_val)}")
+    print(f"Fold {fold + 1}: Validation set class distribution after deduplication -> Class 0: {num_class_0}, Class 1: {num_class_1}")
+
     # Train the model
     clf.fit(X_train, y_train)
 
