@@ -31,6 +31,11 @@ df = pd.read_csv(f"../../training_data_{feature_count}.csv")
 # Important: remove the "normal" Traffic samples
 df = df[df["Target"] != 0]
 
+# Remove exact duplicate rows (all columns considered)
+df = df.drop_duplicates()
+
+print(f"Dataset size after deduplication: {len(df)}")
+
 # Split dataset into features (X) and target variable (y)
 X = df.drop(columns=["Traffic", "Target"])
 y = df["Traffic"]   # Important: use "Traffic" column for multiclass
@@ -40,29 +45,29 @@ kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
 
 print(f"Performing Hyperparameter Tuning for {ml_algo_short}...")
 
-# Define hyperparameter grid
-param_grid = {
-    "n_estimators": [50, 100, 150],
-    "max_depth": [10, 20, 30, None],
-    "min_samples_split": [2, 5, 10],
-    "min_samples_leaf": [1, 2, 4],
-    "bootstrap": [True, False]
-}
-
-# Hyperparameter tuning using GridSearchCV
-grid_search = GridSearchCV(RandomForestClassifier(random_state=42),
-                           param_grid,
-                           cv=kf,
-                           scoring="accuracy",
-                           n_jobs=-1)
-grid_search.fit(X, y)
-
-# Best hyperparameters
-best_params = grid_search.best_params_
-print(f"Best Parameters for {ml_algo_short}: {best_params}")
+# # Define hyperparameter grid
+# param_grid = {
+#     "n_estimators": [50, 100, 150],
+#     "max_depth": [10, 20, 30, None],
+#     "min_samples_split": [2, 5, 10],
+#     "min_samples_leaf": [1, 2, 4],
+#     "bootstrap": [True, False]
+# }
+#
+# # Hyperparameter tuning using GridSearchCV
+# grid_search = GridSearchCV(RandomForestClassifier(random_state=42),
+#                            param_grid,
+#                            cv=kf,
+#                            scoring="accuracy",
+#                            n_jobs=-1)
+# grid_search.fit(X, y)
+#
+# # Best hyperparameters
+# best_params = grid_search.best_params_
+# print(f"Best Parameters for {ml_algo_short}: {best_params}")
 
 # Use the best parameters from Grid Search
-clf = RandomForestClassifier(**best_params, random_state=42)
+clf = RandomForestClassifier(bootstrap= True, max_depth=10, min_samples_leaf=1, min_samples_split=2, n_estimators=50, random_state=42)
 # ----------------------------- #
 
 # Lists to store confusion matrices and scores
@@ -80,13 +85,32 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
     y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
 
+    # Combine features and target for train and val
+    train_combined = pd.concat([X_train, y_train], axis=1)
+    val_combined = pd.concat([X_val, y_val], axis=1)
+
+    # Remove any validation rows that appear in training set
+    val_combined = val_combined[~val_combined.apply(tuple, axis=1).isin(train_combined.apply(tuple, axis=1))]
+
+    # Split again to X_val, y_val after deduplication with train
+    X_val = val_combined.drop(columns=[y.name])
+    y_val = val_combined[y.name]
+
+    # Check for overlapping samples between train and val
+    duplicates = pd.merge(
+        pd.concat([X_train, y_train], axis=1),
+        pd.concat([X_val, y_val], axis=1),
+        how='inner'
+    )
+    print(f"Number of overlapping samples between train and val in fold {fold + 1}: {len(duplicates)}")
+
     # Train the model
     clf.fit(X_train, y_train)
 
     # Predict on the test fold
     y_pred = clf.predict(X_val)
 
-    # Compute confusion matrix for the current fold
+    # Compute confusion matrix
     conf_matrix = confusion_matrix(y_val, y_pred)
     conf_matrices.append(conf_matrix)
     norm_conf_matrix = np.round(conf_matrix / np.sum(conf_matrix, axis=1).reshape(-1, 1), decimals=5)
@@ -98,16 +122,17 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     recall_scores.append(recall_score(y_val, y_pred, average="weighted"))
     f1_scores.append(f1_score(y_val, y_pred, average="weighted"))
 
-    # Dynamically get the label of each attack
+    # Dynamically get class labels
     attack_labels = clf.classes_
 
-    # Display confusion matrix and normalized version
+    # Plot regular confusion matrix
     conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=attack_labels)
     conf_matrix_disp.plot(cmap=plt.cm.Blues)
     plt.title(f"Confusion Matrix - Fold {fold + 1}")
-    plt.savefig(f"./results_{feature_count}/conf_matrix_{feature_count}_fold_{fold+1}.png", dpi=300, bbox_inches='tight')
+    plt.savefig(f"./results_{feature_count}/conf_matrix_{feature_count}_fold_{fold + 1}.png", dpi=300, bbox_inches='tight')
     plt.close()
 
+    # Plot normalized confusion matrix
     norm_conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=norm_conf_matrix, display_labels=attack_labels)
     norm_conf_matrix_disp.plot(cmap=plt.cm.Greens)
     plt.title(f"Normalized Confusion Matrix - Fold {fold + 1}")
@@ -194,7 +219,7 @@ plt.close()
 
 # Output in a txt file
 with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') as file:
-    file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
+    # file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
 
     file.write(f"\n---SCORES---")
     file.write(f"\nAccuracy: \n{accuracy_scores}")

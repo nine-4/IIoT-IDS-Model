@@ -36,22 +36,22 @@ kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
 print(f"Performing Hyperparameter Tuning for {ml_algo_short}...")
 
 # Define hyperparameter grid
-param_grid = {
-    "n_neighbors": [3, 5, 7, 9, 11],
-    "weights": ["uniform", "distance"],
-    "metric": ["euclidean", "manhattan"]
-}
-
-# Hyperparameter tuning using GridSearchCV
-grid_search = GridSearchCV(KNeighborsClassifier(), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
-grid_search.fit(X, y)
-
-# Best hyperparameters
-best_params = grid_search.best_params_
-print(f"Best Parameters for {ml_algo_short}: {best_params}")
+# param_grid = {
+#     "n_neighbors": [3],
+#     "weights": ["distance"],
+#     "metric": ["euclidean"]
+# }
+#
+# # Hyperparameter tuning using GridSearchCV
+# grid_search = GridSearchCV(KNeighborsClassifier(), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
+# grid_search.fit(X, y)
+#
+# # Best hyperparameters
+# best_params = grid_search.best_params_
+# print(f"Best Parameters for {ml_algo_short}: {best_params}")
 
 # Use the best parameter/s found by GridSearchCV
-clf = KNeighborsClassifier(**best_params)
+clf = KNeighborsClassifier(n_neighbors=3, weights="distance", metric="euclidean")
 # ----------------------------- #
 
 # Lists to store confusion matrices and scores
@@ -223,7 +223,7 @@ plt.close()
 
 # Output in a txt file
 with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') as file:
-    file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
+    # file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
 
     file.write(f"\n---SCORES---")
     file.write(f"\nAccuracy: \n{accuracy_scores}")

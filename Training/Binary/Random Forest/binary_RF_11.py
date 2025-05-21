@@ -33,30 +33,30 @@ y = df["Target"]
 # Set up k-fold cross-validation
 kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
 
-# Define hyperparameter grid
-param_grid = {
-    "n_estimators": [50, 100, 150],
-    "max_depth": [10, 20, 30, None],
-    "min_samples_split": [2, 5, 10],
-    "min_samples_leaf": [1, 2, 4],
-    "bootstrap": [True, False]
-}
-
-# Hyperparameter tuning using GridSearchCV
-print(f"\nPerforming Hyperparameter Tuning for {ml_algo_short}...")
-grid_search = GridSearchCV(RandomForestClassifier(random_state=42),
-                           param_grid,
-                           cv=kf,
-                           scoring="accuracy",
-                           n_jobs=-1)
-grid_search.fit(X, y)
-
-# Best hyperparameters
-best_params = grid_search.best_params_
-print(f"Best Parameters for {ml_algo_short}: {best_params}")
+# # Define hyperparameter grid
+# param_grid = {
+#     "n_estimators": [50, 100, 150],
+#     "max_depth": [10, 20, 30, None],
+#     "min_samples_split": [2, 5, 10],
+#     "min_samples_leaf": [1, 2, 4],
+#     "bootstrap": [True, False]
+# }
+#
+# # Hyperparameter tuning using GridSearchCV
+# print(f"\nPerforming Hyperparameter Tuning for {ml_algo_short}...")
+# grid_search = GridSearchCV(RandomForestClassifier(random_state=42),
+#                            param_grid,
+#                            cv=kf,
+#                            scoring="accuracy",
+#                            n_jobs=-1)
+# grid_search.fit(X, y)
+#
+# # Best hyperparameters
+# best_params = grid_search.best_params_
+# print(f"Best Parameters for {ml_algo_short}: {best_params}")
 
 # Use the best parameters from Grid Search
-clf = RandomForestClassifier(**best_params, random_state=42)
+clf = RandomForestClassifier(bootstrap=False, max_depth=30, min_samples_leaf=1, min_samples_split=2, n_estimators=50, random_state=42)
 
 #-----------------------------#
 
@@ -74,6 +74,33 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     # Split data
     X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
     y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+
+    train_class_counts = y_train.value_counts()
+    num_train_class_0 = train_class_counts.get(0, 0)
+    num_train_class_1 = train_class_counts.get(1, 0)
+
+    print(f"Fold {fold + 1}: Training set class distribution -> Class 0: {num_train_class_0}, Class 1: {num_train_class_1}")
+
+    # Combine features and target to detect duplicates
+    train_combined = pd.concat([X_train, y_train], axis=1)
+    val_combined = pd.concat([X_val, y_val], axis=1)
+
+    # Remove any rows from val_combined that also appear in train_combined
+    initial_val_size = len(val_combined)
+    val_combined = val_combined[~val_combined.apply(tuple, axis=1).isin(train_combined.apply(tuple, axis=1))]
+    removed_count = initial_val_size - len(val_combined)
+
+    # Separate X_val and y_val again
+    X_val = val_combined.drop(columns=["Target"])
+    y_val = val_combined["Target"]
+
+    class_counts = y_val.value_counts()
+    num_class_0 = class_counts.get(0, 0)
+    num_class_1 = class_counts.get(1, 0)
+
+    print(f"Fold {fold + 1}: Removed {removed_count} duplicate samples from validation set.")
+    print(f"Fold {fold + 1}: Validation set size after deduplication: {len(X_val)}")
+    print(f"Fold {fold + 1}: Validation set class distribution after deduplication -> Class 0: {num_class_0}, Class 1: {num_class_1}")
 
     # Train the model
     clf.fit(X_train, y_train)
@@ -100,7 +127,8 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=[0, 1])
     conf_matrix_disp.plot(cmap=plt.cm.Blues)
     plt.title(f"Confusion Matrix - Fold {fold + 1}")
-    plt.savefig(f"./results_{feature_count}/conf_matrix_{feature_count}_fold_{fold+1}.png", dpi=300, bbox_inches='tight')
+    plt.savefig(f"./results_{feature_count}/conf_matrix_{feature_count}_fold_{fold + 1}.png", dpi=300,
+                bbox_inches='tight')
     plt.close()
 
     norm_conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=norm_conf_matrix, display_labels=[0, 1])
@@ -202,7 +230,7 @@ plt.close()
 
 # Output in a txt file
 with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') as file:
-    file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
+    # file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
 
     file.write(f"\n---SCORES---")
     file.write(f"\nAccuracy: \n{accuracy_scores}")

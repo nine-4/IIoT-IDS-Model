@@ -41,20 +41,20 @@ kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
 
 print(f"Performing Hyperparameter Tuning for {ml_algo_short}...")
 
-# Define the hyperparameter grid for tuning
-param_grid = {
-    "max_depth": [5, 10, 15, 20, None],
-    "min_samples_split": [2, 5, 10],
-    "min_samples_leaf": [1, 2, 5]
-}
-
-# Hyperparameter tuning using GridSearchCV
-grid_search = GridSearchCV(DecisionTreeClassifier(), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
-grid_search.fit(X, y)
-
-# Best hyperparameters
-best_params = grid_search.best_params_
-print(f"Best Parameters for {ml_algo_short}: {best_params}")
+# # Define the hyperparameter grid for tuning
+# param_grid = {
+#     "max_depth": [5, 10, 15, 20, None],
+#     "min_samples_split": [2, 5, 10],
+#     "min_samples_leaf": [1, 2, 5]
+# }
+#
+# # Hyperparameter tuning using GridSearchCV
+# grid_search = GridSearchCV(DecisionTreeClassifier(), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
+# grid_search.fit(X, y)
+#
+# # Best hyperparameters
+# best_params = grid_search.best_params_
+# print(f"Best Parameters for {ml_algo_short}: {best_params}")
 
 # Use the best parameter/s found by GridSearchCV
 clf = DecisionTreeClassifier(**best_params, random_state=42)
