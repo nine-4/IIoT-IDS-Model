@@ -4,17 +4,16 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import KFold, cross_val_predict, GridSearchCV
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay,
                              accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score)
 from sklearn.preprocessing import label_binarize
 from joblib import dump
 
 # -----VARIABLES TO MODIFY----- #
-feature_count = 11
-ml_algo = "Logistic Regression"
-ml_algo_short = "LR"
+feature_count = 41
+ml_algo = "Artificial Neural Network"
+ml_algo_short = "ANN"
 
 k_folds = 10  # Number of folds
 
@@ -42,16 +41,16 @@ kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
 
 print(f"Performing Hyperparameter Tuning for {ml_algo_short}...")
 
-# Define the hyperparameter grid for tuning
+# Define hyperparameter grid
 param_grid = {
-    'C': [0.01, 0.1, 1, 10],  # Regularization strength
-    'penalty': [None, 'l2'],  # Regularization type
-    'solver': ['lbfgs', 'newton-cg'],  # Solvers that support L1 and L2 penalties
-    'max_iter': [1000]  # Number of iterations
+    "hidden_layer_sizes": [(50,), (100,), (100, 50), (100, 100)],
+    "activation": ["relu", "tanh"],
+    "solver": ["adam", "sgd"],
+    "max_iter": [500]
 }
 
 # Hyperparameter tuning using GridSearchCV
-grid_search = GridSearchCV(LogisticRegression(), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
+grid_search = GridSearchCV(MLPClassifier(random_state=42), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
 grid_search.fit(X, y)
 
 # Best hyperparameters
@@ -59,7 +58,7 @@ best_params = grid_search.best_params_
 print(f"Best Parameters for {ml_algo_short}: {best_params}")
 
 # Use the best parameter/s found by GridSearchCV
-clf = LogisticRegression(**best_params, random_state=42)
+clf = MLPClassifier(**best_params)
 # ----------------------------- #
 
 # Lists to store confusion matrices and scores
@@ -69,12 +68,6 @@ precision_scores = []
 recall_scores = []
 f1_scores = []
 
-# Initialize the scaler
-scaler = StandardScaler()
-
-# Fit on the whole dataset (only fit, don't transform yet)
-scaler.fit(X)
-
 # Perform manual K-Fold cross-validation
 for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     print(f"\nProcessing Fold {fold + 1}/{k_folds}...")
@@ -82,10 +75,6 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     # Split data
     X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
     y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
-
-    # Scale the data
-    X_train = scaler.transform(X_train)  # Scale training data
-    X_val = scaler.transform(X_val)  # Scale validation data
 
     # Train the model
     clf.fit(X_train, y_train)

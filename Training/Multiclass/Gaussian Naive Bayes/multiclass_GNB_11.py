@@ -8,6 +8,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay,
                              accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score)
 from sklearn.preprocessing import label_binarize
+from joblib import dump
 
 # -----VARIABLES TO MODIFY----- #
 feature_count = 11
@@ -220,6 +221,8 @@ with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') 
 
     file.write(f"\nTime it took to execute (in seconds): {time.time() - start_time:.4f}")
 
+# Save the trained model to be used later
+dump(clf, f'binary_{ml_algo_short}_{feature_count}_model.joblib')
 
 end_time = time.time()
 print(f"\nTime it took to execute (in seconds): {end_time - start_time:.4f}")
