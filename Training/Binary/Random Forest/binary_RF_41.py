@@ -76,10 +76,7 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
 
     train_class_counts = y_train.value_counts()
-    num_train_class_0 = train_class_counts.get(0, 0)
-    num_train_class_1 = train_class_counts.get(1, 0)
-
-    print(f"Fold {fold + 1}: Training set class distribution -> Class 0: {num_train_class_0}, Class 1: {num_train_class_1}")
+    print(f"Fold {fold + 1}: Training set class distribution -> Class 0: {train_class_counts.get(0, 0)}, Class 1: {train_class_counts.get(1, 0)}")
 
     # Combine features and target to detect duplicates
     train_combined = pd.concat([X_train, y_train], axis=1)
@@ -90,17 +87,31 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     val_combined = val_combined[~val_combined.apply(tuple, axis=1).isin(train_combined.apply(tuple, axis=1))]
     removed_count = initial_val_size - len(val_combined)
 
+    print(f"Fold {fold + 1}: Removed {removed_count} duplicate samples from validation set.")
+    print(f"Fold {fold + 1}: Validation set size after deduplication: {len(val_combined)}")
+
+    # Balance validation set
+    val_class_0 = val_combined[val_combined["Target"] == 0]
+    val_class_1 = val_combined[val_combined["Target"] == 1]
+
+    # Target size for class 0
+    target_class_0_size = 1400
+
+    # Downsample class 0 to 1300 (or less if there aren't that many)
+    val_class_0_sampled = val_class_0.sample(n=min(target_class_0_size, len(val_class_0)), random_state=42)
+
+    # Keep all of class 1
+    val_class_1_sampled = val_class_1
+
+    val_balanced = pd.concat([val_class_0_sampled, val_class_1_sampled])
+    val_balanced = val_balanced.sample(frac=1, random_state=42)  # Shuffle
+
     # Separate X_val and y_val again
-    X_val = val_combined.drop(columns=["Target"])
-    y_val = val_combined["Target"]
+    X_val = val_balanced.drop(columns=["Target"])
+    y_val = val_balanced["Target"]
 
     class_counts = y_val.value_counts()
-    num_class_0 = class_counts.get(0, 0)
-    num_class_1 = class_counts.get(1, 0)
-
-    print(f"Fold {fold + 1}: Removed {removed_count} duplicate samples from validation set.")
-    print(f"Fold {fold + 1}: Validation set size after deduplication: {len(X_val)}")
-    print(f"Fold {fold + 1}: Validation set class distribution after deduplication -> Class 0: {num_class_0}, Class 1: {num_class_1}")
+    print(f"Fold {fold + 1}: Validation set class distribution after balancing -> Class 0: {class_counts.get(0, 0)}, Class 1: {class_counts.get(1, 0)}")
 
     # Train the model
     clf.fit(X_train, y_train)
@@ -127,8 +138,7 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=[0, 1])
     conf_matrix_disp.plot(cmap=plt.cm.Blues)
     plt.title(f"Confusion Matrix - Fold {fold + 1}")
-    plt.savefig(f"./results_{feature_count}/conf_matrix_{feature_count}_fold_{fold + 1}.png", dpi=300,
-                bbox_inches='tight')
+    plt.savefig(f"./results_{feature_count}/conf_matrix_{feature_count}_fold_{fold+1}.png", dpi=300, bbox_inches='tight')
     plt.close()
 
     norm_conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=norm_conf_matrix, display_labels=[0, 1])
