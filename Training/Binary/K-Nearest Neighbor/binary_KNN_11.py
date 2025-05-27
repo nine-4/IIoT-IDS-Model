@@ -121,7 +121,8 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=[0, 1])
     conf_matrix_disp.plot(cmap=plt.cm.Blues)
     plt.title(f"Confusion Matrix - Fold {fold + 1}")
-    plt.savefig(f"./results_{feature_count}/conf_matrix_{feature_count}_fold_{fold + 1}.png", dpi=300,bbox_inches='tight')
+    plt.savefig(f"./results_{feature_count}/conf_matrix_{feature_count}_fold_{fold + 1}.png", dpi=300,
+                bbox_inches='tight')
     plt.close()
 
     norm_conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=norm_conf_matrix, display_labels=[0, 1])
