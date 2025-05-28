@@ -239,7 +239,7 @@ plt.savefig(f"./{results_path}/decision_tree_{feature_count}.png", dpi=300, bbox
 plt.close()
 
 # Save the trained model to be used later
-dump(clf, f'binary_{ml_algo_short}_{feature_count}_model.joblib')
+dump(clf, f'multiclass_{ml_algo_short}_{feature_count}_model.joblib')
 
 end_time = time.time()
 print(f"\nTime it took to execute (in seconds): {end_time - start_time:.4f}")
