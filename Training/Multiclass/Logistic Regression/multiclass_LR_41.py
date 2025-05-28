@@ -79,38 +79,46 @@ scaler = StandardScaler()
 scaler.fit(X)
 
 # Perform manual K-Fold cross-validation
-for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
-    print(f"\nProcessing Fold {fold + 1}/{k_folds}...")
+for fold, (train_idx, val_idx) in enumerate(kf.split(X, y), 1):
+    print(f"Processing Fold {fold}/10...")
 
-    # Split data
-    X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
-    y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+    # Initial train/val splits
+    X_train, X_val = X.iloc[train_idx].copy(), X.iloc[val_idx].copy()
+    y_train, y_val = y.iloc[train_idx].copy(), y.iloc[val_idx].copy()
 
-    # Combine features and target for train and val
-    train_combined = pd.concat([X_train, y_train], axis=1)
-    val_combined = pd.concat([X_val, y_val], axis=1)
+    # Add 'label' column to both sets for deduplication
+    train_df = X_train.copy()
+    train_df["label"] = y_train
+    train_df["source"] = "train"
 
-    # Remove any validation rows that appear in training set
-    val_combined = val_combined[~val_combined.apply(tuple, axis=1).isin(train_combined.apply(tuple, axis=1))]
+    val_df = X_val.copy()
+    val_df["label"] = y_val
+    val_df["source"] = "val"
 
-    # Split again to X_val, y_val after deduplication with train
-    X_val = val_combined.drop(columns=[y.name])
-    y_val = val_combined[y.name]
+    # Combine and drop duplicates based on feature columns only
+    combined = pd.concat([train_df, val_df])
+    deduped = combined.drop_duplicates(subset=X_train.columns)
 
-    duplicates = pd.merge(
-        pd.concat([X_train, y_train], axis=1),
-        pd.concat([X_val, y_val], axis=1),
-        how='inner'
-    )
-    print(f"Number of overlapping samples between train and val in fold {fold + 1}: {len(duplicates)}")
+    # Separate back into train and val sets
+    X_train_clean = deduped[deduped["source"] == "train"].drop(columns=["source"])
+    X_val_clean = deduped[deduped["source"] == "val"].drop(columns=["source"])
 
-    # Scale the data
-    X_train = scaler.transform(X_train)  # Scale training data
-    X_val = scaler.transform(X_val)  # Scale validation data
+    # Pop the labels out
+    y_train_clean = X_train_clean.pop("label")
+    y_val_clean = X_val_clean.pop("label")
 
+    # Check for remaining overlaps (optional)
+    overlap = pd.merge(X_train_clean, X_val_clean, how="inner")
+    print(f"Number of overlapping rows (data-wise) after cleaning: {len(overlap)}")
+
+    # Class distribution
+    print("Class distribution in Training Set:")
+    print(y_train_clean.value_counts().sort_index())
+    print("Class distribution in Validation Set:")
+    print(y_val_clean.value_counts().sort_index())
 
     # Train the model
-    clf.fit(X_train, y_train)
+    clf.fit(X_train_clean, y_train_clean)
 
     # Predict on the test fold
     y_pred = clf.predict(X_val)

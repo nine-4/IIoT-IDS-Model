@@ -32,6 +32,10 @@ df = pd.read_csv(f"../../training_data_{feature_count}.csv")
 # Important: remove the "normal" Traffic samples
 df = df[df["Target"] != 0]
 
+df = df.drop_duplicates()
+
+print(f"Dataset size after deduplication: {len(df)}")
+
 # Split dataset into features (X) and target variable (y)
 X = df.drop(columns=["Traffic", "Target"])
 y = df["Traffic"]   # Important: use "Traffic" column for multiclass
@@ -41,24 +45,24 @@ kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
 
 print(f"Performing Hyperparameter Tuning for {ml_algo_short}...")
 
-# Define the hyperparameter grid for tuning
-param_grid = {
-    'C': [0.01, 0.1, 1, 10],  # Regularization strength
-    'penalty': [None, 'l2'],  # Regularization type
-    'solver': ['lbfgs', 'newton-cg'],  # Solvers that support L1 and L2 penalties
-    'max_iter': [1000]  # Number of iterations
-}
-
-# Hyperparameter tuning using GridSearchCV
-grid_search = GridSearchCV(LogisticRegression(), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
-grid_search.fit(X, y)
-
-# Best hyperparameters
-best_params = grid_search.best_params_
-print(f"Best Parameters for {ml_algo_short}: {best_params}")
+# # Define the hyperparameter grid for tuning
+# param_grid = {
+#     'C': [0.01, 0.1, 1, 10],  # Regularization strength
+#     'penalty': [None, 'l2'],  # Regularization type
+#     'solver': ['lbfgs', 'newton-cg'],  # Solvers that support L1 and L2 penalties
+#     'max_iter': [1000]  # Number of iterations
+# }
+#
+# # Hyperparameter tuning using GridSearchCV
+# grid_search = GridSearchCV(LogisticRegression(), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
+# grid_search.fit(X, y)
+#
+# # Best hyperparameters
+# best_params = grid_search.best_params_
+# print(f"Best Parameters for {ml_algo_short}: {best_params}")
 
 # Use the best parameter/s found by GridSearchCV
-clf = LogisticRegression(**best_params, random_state=42)
+clf = LogisticRegression(C=0.01, max_iter=1000, penalty=None, solver='newton-cg', random_state=42)
 # ----------------------------- #
 
 # Lists to store confusion matrices and scores
@@ -75,19 +79,46 @@ scaler = StandardScaler()
 scaler.fit(X)
 
 # Perform manual K-Fold cross-validation
-for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
-    print(f"\nProcessing Fold {fold + 1}/{k_folds}...")
+for fold, (train_idx, val_idx) in enumerate(kf.split(X, y), 1):
+    print(f"Processing Fold {fold}/10...")
 
-    # Split data
-    X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
-    y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+    # Initial train/val splits
+    X_train, X_val = X.iloc[train_idx].copy(), X.iloc[val_idx].copy()
+    y_train, y_val = y.iloc[train_idx].copy(), y.iloc[val_idx].copy()
 
-    # Scale the data
-    X_train = scaler.transform(X_train)  # Scale training data
-    X_val = scaler.transform(X_val)  # Scale validation data
+    # Add 'label' column to both sets for deduplication
+    train_df = X_train.copy()
+    train_df["label"] = y_train
+    train_df["source"] = "train"
+
+    val_df = X_val.copy()
+    val_df["label"] = y_val
+    val_df["source"] = "val"
+
+    # Combine and drop duplicates based on feature columns only
+    combined = pd.concat([train_df, val_df])
+    deduped = combined.drop_duplicates(subset=X_train.columns)
+
+    # Separate back into train and val sets
+    X_train_clean = deduped[deduped["source"] == "train"].drop(columns=["source"])
+    X_val_clean = deduped[deduped["source"] == "val"].drop(columns=["source"])
+
+    # Pop the labels out
+    y_train_clean = X_train_clean.pop("label")
+    y_val_clean = X_val_clean.pop("label")
+
+    # Check for remaining overlaps (optional)
+    overlap = pd.merge(X_train_clean, X_val_clean, how="inner")
+    print(f"Number of overlapping rows (data-wise) after cleaning: {len(overlap)}")
+
+    # Class distribution
+    print("Class distribution in Training Set:")
+    print(y_train_clean.value_counts().sort_index())
+    print("Class distribution in Validation Set:")
+    print(y_val_clean.value_counts().sort_index())
 
     # Train the model
-    clf.fit(X_train, y_train)
+    clf.fit(X_train_clean, y_train_clean)
 
     # Predict on the test fold
     y_pred = clf.predict(X_val)
@@ -200,7 +231,7 @@ plt.close()
 
 # Output in a txt file
 with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') as file:
-    file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
+    # file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
 
     file.write(f"\n---SCORES---")
     file.write(f"\nAccuracy: \n{accuracy_scores}")

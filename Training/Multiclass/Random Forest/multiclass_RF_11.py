@@ -78,39 +78,51 @@ recall_scores = []
 f1_scores = []
 
 # Perform manual K-Fold cross-validation
-for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
-    print(f"\nProcessing Fold {fold + 1}/{k_folds}...")
+for fold, (train_idx, val_idx) in enumerate(kf.split(X, y), 1):
+    print(f"Processing Fold {fold}/10...")
 
-    # Split data
-    X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
-    y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+    # Initial train/val splits
+    X_train, X_val = X.iloc[train_idx].copy(), X.iloc[val_idx].copy()
+    y_train, y_val = y.iloc[train_idx].copy(), y.iloc[val_idx].copy()
 
-    # Combine features and target for train and val
-    train_combined = pd.concat([X_train, y_train], axis=1)
-    val_combined = pd.concat([X_val, y_val], axis=1)
+    # Add 'label' column to both sets for deduplication
+    train_df = X_train.copy()
+    train_df["label"] = y_train
+    train_df["source"] = "train"
 
-    # Remove any validation rows that appear in training set
-    val_combined = val_combined[~val_combined.apply(tuple, axis=1).isin(train_combined.apply(tuple, axis=1))]
+    val_df = X_val.copy()
+    val_df["label"] = y_val
+    val_df["source"] = "val"
 
-    # Split again to X_val, y_val after deduplication with train
-    X_val = val_combined.drop(columns=[y.name])
-    y_val = val_combined[y.name]
+    # Combine and drop duplicates based on feature columns only
+    combined = pd.concat([train_df, val_df])
+    deduped = combined.drop_duplicates(subset=X_train.columns)
 
-    # Check for overlapping samples between train and val
-    duplicates = pd.merge(
-        pd.concat([X_train, y_train], axis=1),
-        pd.concat([X_val, y_val], axis=1),
-        how='inner'
-    )
-    print(f"Number of overlapping samples between train and val in fold {fold + 1}: {len(duplicates)}")
+    # Separate back into train and val sets
+    X_train_clean = deduped[deduped["source"] == "train"].drop(columns=["source"])
+    X_val_clean = deduped[deduped["source"] == "val"].drop(columns=["source"])
+
+    # Pop the labels out
+    y_train_clean = X_train_clean.pop("label")
+    y_val_clean = X_val_clean.pop("label")
+
+    # Check for remaining overlaps (optional)
+    overlap = pd.merge(X_train_clean, X_val_clean, how="inner")
+    print(f"Number of overlapping rows (data-wise) after cleaning: {len(overlap)}")
+
+    # Class distribution
+    print("Class distribution in Training Set:")
+    print(y_train_clean.value_counts().sort_index())
+    print("Class distribution in Validation Set:")
+    print(y_val_clean.value_counts().sort_index())
 
     # Train the model
-    clf.fit(X_train, y_train)
+    clf.fit(X_train_clean, y_train_clean)
 
     # Predict on the test fold
     y_pred = clf.predict(X_val)
 
-    # Compute confusion matrix
+    # Compute confusion matrix for the current fold
     conf_matrix = confusion_matrix(y_val, y_pred)
     conf_matrices.append(conf_matrix)
     norm_conf_matrix = np.round(conf_matrix / np.sum(conf_matrix, axis=1).reshape(-1, 1), decimals=5)
@@ -122,17 +134,16 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     recall_scores.append(recall_score(y_val, y_pred, average="weighted"))
     f1_scores.append(f1_score(y_val, y_pred, average="weighted"))
 
-    # Dynamically get class labels
+    # Dynamically get the label of each attack
     attack_labels = clf.classes_
 
-    # Plot regular confusion matrix
+    # Display confusion matrix and normalized version
     conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=attack_labels)
     conf_matrix_disp.plot(cmap=plt.cm.Blues)
     plt.title(f"Confusion Matrix - Fold {fold + 1}")
-    plt.savefig(f"./results_{feature_count}/conf_matrix_{feature_count}_fold_{fold + 1}.png", dpi=300, bbox_inches='tight')
+    plt.savefig(f"./results_{feature_count}/conf_matrix_{feature_count}_fold_{fold+1}.png", dpi=300, bbox_inches='tight')
     plt.close()
 
-    # Plot normalized confusion matrix
     norm_conf_matrix_disp = ConfusionMatrixDisplay(confusion_matrix=norm_conf_matrix, display_labels=attack_labels)
     norm_conf_matrix_disp.plot(cmap=plt.cm.Greens)
     plt.title(f"Normalized Confusion Matrix - Fold {fold + 1}")

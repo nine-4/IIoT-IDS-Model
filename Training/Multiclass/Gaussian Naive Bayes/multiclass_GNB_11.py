@@ -3,11 +3,12 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import KFold, cross_val_predict, GridSearchCV
+from sklearn.model_selection import KFold, cross_val_predict, GridSearchCV, StratifiedKFold
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay,
                              accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score)
 from sklearn.preprocessing import label_binarize
+from sklearn.utils import resample
 
 # -----VARIABLES TO MODIFY----- #
 feature_count = 11
@@ -30,6 +31,10 @@ df = pd.read_csv(f"../../training_data_{feature_count}.csv")
 
 # Important: remove the "normal" Traffic samples
 df = df[df["Target"] != 0]
+
+df = df.drop_duplicates()
+
+print(f"Dataset size after deduplication: {len(df)}")
 
 # Split dataset into features (X) and target variable (y)
 X = df.drop(columns=["Traffic", "Target"])
@@ -60,13 +65,43 @@ precision_scores = []
 recall_scores = []
 f1_scores = []
 
-# Perform manual K-Fold cross-validation
-for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
-    print(f"\nProcessing Fold {fold + 1}/{k_folds}...")
+kf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 
-    # Split data
-    X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
-    y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+# Perform manual K-Fold cross-validation
+for fold, (train_idx, val_idx) in enumerate(kf.split(X, y), 1):
+    print(f"\nProcessing Fold {fold}/10...")
+
+    # Raw splits (no upsampling yet)
+    X_train_raw, X_val = X.iloc[train_idx].copy(), X.iloc[val_idx].copy()
+    y_train_raw, y_val = y.iloc[train_idx].copy(), y.iloc[val_idx].copy()
+
+    # Combine train for upsampling
+    train_df = pd.concat([X_train_raw, y_train_raw], axis=1)
+    train_df.columns = list(X_train_raw.columns) + ["label"]
+
+    # Perform upsampling per class
+    resampled = []
+    max_size = train_df["label"].value_counts().max()
+    for label in train_df["label"].unique():
+        class_df = train_df[train_df["label"] == label]
+        upsampled_df = resample(
+            class_df, replace=True, n_samples=max_size, random_state=fold
+        )
+        resampled.append(upsampled_df)
+
+    train_df_balanced = pd.concat(resampled)
+    X_train = train_df_balanced.drop(columns=["label"])
+    y_train = train_df_balanced["label"]
+
+    # Check overlap
+    overlap = pd.merge(X_train, X_val, how="inner")
+    print(f"Number of overlapping rows (data-wise): {len(overlap)}")
+
+    # Print class distributions
+    print("Class distribution in Training Set:")
+    print(y_train.value_counts().sort_index())
+    print("Class distribution in Validation Set:")
+    print(y_val.value_counts().sort_index())
 
     # Train the model
     clf.fit(X_train, y_train)

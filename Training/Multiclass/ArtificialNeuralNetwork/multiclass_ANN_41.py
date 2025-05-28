@@ -4,15 +4,15 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import KFold, cross_val_predict, GridSearchCV
-from sklearn.naive_bayes import GaussianNB
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay,
                              accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score)
 from sklearn.preprocessing import label_binarize
 
 # -----VARIABLES TO MODIFY----- #
 feature_count = 41
-ml_algo = "Gaussian Naive Bayes"
-ml_algo_short = "GNB"
+ml_algo = "Artificial Neural Network"
+ml_algo_short = "ANN"
 
 k_folds = 10  # Number of folds
 
@@ -42,19 +42,26 @@ y = df["Traffic"]   # Important: use "Traffic" column for multiclass
 # Set up k-fold cross-validation
 kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
 
-print(f"Performing Hyperparameter Tuning for {ml_algo_short}...")
-
-# Hyperparameter tuning using GridSearchCV
-param_grid = {"var_smoothing": np.logspace(-9, 0, 10)}
-grid_search = GridSearchCV(GaussianNB(), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
-grid_search.fit(X, y)
-
-# Best hyperparameters
-best_params = grid_search.best_params_
-print(f"Best Parameters for {ml_algo_short}: {best_params}")
+# print(f"Performing Hyperparameter Tuning for {ml_algo_short}...")
+#
+# # Define hyperparameter grid
+# param_grid = {
+#     "hidden_layer_sizes": [(50,), (100,), (100, 50), (100, 100)],
+#     "activation": ["relu", "tanh"],
+#     "solver": ["adam", "sgd"],
+#     "max_iter": [500]
+# }
+#
+# # Hyperparameter tuning using GridSearchCV
+# grid_search = GridSearchCV(MLPClassifier(random_state=42), param_grid, cv=kf, scoring="accuracy", n_jobs=-1)
+# grid_search.fit(X, y)
+#
+# # Best hyperparameters
+# best_params = grid_search.best_params_
+# print(f"Best Parameters for {ml_algo_short}: {best_params}")
 
 # Use the best parameter/s found by GridSearchCV
-clf = GaussianNB(**best_params)
+clf = MLPClassifier(activation='tanh', hidden_layer_sizes= (100, 100), max_iter= 500, solver= 'adam')
 # ----------------------------- #
 
 # Lists to store confusion matrices and scores
@@ -217,7 +224,7 @@ plt.close()
 
 # Output in a txt file
 with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') as file:
-    file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
+    # file.write(f"Best Parameters for {ml_algo_short}: {best_params}\n")
 
     file.write(f"\n---SCORES---")
     file.write(f"\nAccuracy: \n{accuracy_scores}")
