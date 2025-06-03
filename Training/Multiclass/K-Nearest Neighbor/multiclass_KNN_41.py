@@ -9,6 +9,8 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay,
                              accuracy_score, precision_score, recall_score, f1_score, roc_curve, roc_auc_score)
 from sklearn.preprocessing import label_binarize
+from sklearn.utils import resample
+from joblib import dump
 
 # -----VARIABLES TO MODIFY----- #
 feature_count = 41
@@ -73,45 +75,42 @@ f1_scores = []
 
 # Perform manual K-Fold cross-validation
 for fold, (train_idx, val_idx) in enumerate(kf.split(X, y), 1):
-    print(f"Processing Fold {fold}/10...")
+    print(f"\nProcessing Fold {fold}/10...")
 
-    # Initial train/val splits
-    X_train, X_val = X.iloc[train_idx].copy(), X.iloc[val_idx].copy()
-    y_train, y_val = y.iloc[train_idx].copy(), y.iloc[val_idx].copy()
+    # Raw splits (no upsampling yet)
+    X_train_raw, X_val = X.iloc[train_idx].copy(), X.iloc[val_idx].copy()
+    y_train_raw, y_val = y.iloc[train_idx].copy(), y.iloc[val_idx].copy()
 
-    # Add 'label' column to both sets for deduplication
-    train_df = X_train.copy()
-    train_df["label"] = y_train
-    train_df["source"] = "train"
+    # Combine train for upsampling
+    train_df = pd.concat([X_train_raw, y_train_raw], axis=1)
+    train_df.columns = list(X_train_raw.columns) + ["label"]
 
-    val_df = X_val.copy()
-    val_df["label"] = y_val
-    val_df["source"] = "val"
+    # Perform upsampling per class
+    resampled = []
+    max_size = train_df["label"].value_counts().max()
+    for label in train_df["label"].unique():
+        class_df = train_df[train_df["label"] == label]
+        upsampled_df = resample(
+            class_df, replace=True, n_samples=max_size, random_state=fold
+        )
+        resampled.append(upsampled_df)
 
-    # Combine and drop duplicates based on feature columns only
-    combined = pd.concat([train_df, val_df])
-    deduped = combined.drop_duplicates(subset=X_train.columns)
+    train_df_balanced = pd.concat(resampled)
+    X_train = train_df_balanced.drop(columns=["label"])
+    y_train = train_df_balanced["label"]
 
-    # Separate back into train and val sets
-    X_train_clean = deduped[deduped["source"] == "train"].drop(columns=["source"])
-    X_val_clean = deduped[deduped["source"] == "val"].drop(columns=["source"])
+    # Check overlap
+    overlap = pd.merge(X_train, X_val, how="inner")
+    print(f"Number of overlapping rows (data-wise): {len(overlap)}")
 
-    # Pop the labels out
-    y_train_clean = X_train_clean.pop("label")
-    y_val_clean = X_val_clean.pop("label")
-
-    # Check for remaining overlaps (optional)
-    overlap = pd.merge(X_train_clean, X_val_clean, how="inner")
-    print(f"Number of overlapping rows (data-wise) after cleaning: {len(overlap)}")
-
-    # Class distribution
+    # Print class distributions
     print("Class distribution in Training Set:")
-    print(y_train_clean.value_counts().sort_index())
+    print(y_train.value_counts().sort_index())
     print("Class distribution in Validation Set:")
-    print(y_val_clean.value_counts().sort_index())
+    print(y_val.value_counts().sort_index())
 
     # Train the model
-    clf.fit(X_train_clean, y_train_clean)
+    clf.fit(X_train, y_train)
 
     # Predict on the test fold
     y_pred = clf.predict(X_val)
@@ -262,6 +261,8 @@ with open(f'./{results_path}/results_{ml_algo_short}_{feature_count}.txt', 'w') 
 
     file.write(f"\nTime it took to execute (in seconds): {time.time() - start_time:.4f}")
 
+# Save the trained model to be used later
+dump(clf, f'multiclass_{ml_algo_short}_{feature_count}_model.joblib')
 
 end_time = time.time()
 print(f"\nTime it took to execute (in seconds): {end_time - start_time:.4f}")
