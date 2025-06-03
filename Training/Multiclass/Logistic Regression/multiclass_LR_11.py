@@ -84,8 +84,8 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
     y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
 
     # Scale the data
-    X_train = scaler.transform(X_train)  # Scale training data
-    X_val = scaler.transform(X_val)  # Scale validation data
+    X_train = pd.DataFrame(scaler.transform(X_train), columns=X.columns)
+    X_val = pd.DataFrame(scaler.transform(X_val), columns=X.columns)
 
     # Train the model
     clf.fit(X_train, y_train)
@@ -101,9 +101,9 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X)):
 
     # Compute scores
     accuracy_scores.append(accuracy_score(y_val, y_pred))
-    precision_scores.append(precision_score(y_val, y_pred, average="weighted"))
-    recall_scores.append(recall_score(y_val, y_pred, average="weighted"))
-    f1_scores.append(f1_score(y_val, y_pred, average="weighted"))
+    precision_scores.append(precision_score(y_val, y_pred, average="weighted", zero_division=0))
+    recall_scores.append(recall_score(y_val, y_pred, average="weighted", zero_division=0))
+    f1_scores.append(f1_score(y_val, y_pred, average="weighted", zero_division=0))
 
     # Dynamically get the label of each attack
     attack_labels = clf.classes_
